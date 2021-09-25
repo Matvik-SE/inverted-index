@@ -22,7 +22,7 @@ func walkHandler(path string, entry fs.DirEntry, e error) error {
 		return e
 	}
 
-	if !entry.IsDir() {
+	if !entry.IsDir() && filepath.Ext(path) == ".txt" {
 		dirFiles = append(dirFiles, path)
 	}
 
