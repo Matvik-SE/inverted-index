@@ -25,7 +25,7 @@ func main() {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Inverted Index App homepage")
+	fmt.Fprintf(w, "Inverted Index Sockets App")
 }
 
 func threadsHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,6 @@ func threadsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err == nil && number > 0 {
 		threadsNum = number
-		log.Println("Number of threads has been changed:", number)
 		fmt.Fprintf(w, "Number of threads has been changed: %d", number)
 	}
 }
@@ -62,10 +61,9 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 		result := runIndexThreads(filesArray, threadsNum, string(message))
 
 		if len(result) == 0 {
-			err = conn.WriteMessage(messageType, []byte("No files found :("))
+			err := conn.WriteMessage(messageType, []byte("No results found"))
 
 			if err != nil {
-				log.Println("Error during socket message writing:", err)
 				break
 			}
 		}
@@ -74,7 +72,6 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 			err = conn.WriteMessage(messageType, []byte(key+" - "+value.(string)+" times"))
 
 			if err != nil {
-				log.Println("Error during socket message writing:", err)
 				break
 			}
 		}
