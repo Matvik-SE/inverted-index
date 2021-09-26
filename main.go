@@ -21,7 +21,7 @@ func main() {
 	http.HandleFunc("/threads", threadsHandler)
 	http.HandleFunc("/socket", socketHandler)
 
-	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+	log.Fatal(http.ListenAndServe("localhost:3000", nil))
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,19 +60,13 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 
 		result := runIndexThreads(filesArray, threadsNum, string(message))
 
-		if len(result) == 0 {
-			err := conn.WriteMessage(messageType, []byte("No results found"))
+		if len(result) > 0 {
+			for key, value := range result {
+				err = conn.WriteMessage(messageType, []byte(key+" - "+value.(string)+" times"))
 
-			if err != nil {
-				break
-			}
-		}
-
-		for key, value := range result {
-			err = conn.WriteMessage(messageType, []byte(key+" - "+value.(string)+" times"))
-
-			if err != nil {
-				break
+				if err != nil {
+					break
+				}
 			}
 		}
 	}
