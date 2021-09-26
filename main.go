@@ -2,66 +2,85 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
-	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
 
-var threads = 6
+var threads = 3
+var word = "and"
+
 var dataDir = "./data/"
-var index []string
+var dataExt = ".txt"
+var resArr []string
+var resMap sync.Map
 
 func main() {
-	res := getDirFiles(dataDir)
-	length := len(res)
-	part := int(math.Ceil(float64(length) / float64(threads)))
+	filesArray := getAllFiles(dataDir, dataExt)
+	arrayLength := len(filesArray)
 
-	start := time.Now()
+	if arrayLength == 0 {
+		log.Panicln("Files folder is empty")
+	}
+	if threads > arrayLength {
+		log.Panicln("Maximum possible threads:", arrayLength)
+	}
+
+	sliceLength := int(math.Floor(float64(arrayLength) / float64(threads)))
+	startTime := time.Now()
+
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	for i := 0; i < threads; i++ {
-		start := i * part
-		stop := start + part
-		part := res[start:stop]
-
-		go func() {
+	for i := 0; i < arrayLength; i += sliceLength {
+		wg.Add(1)
+		go func(from int) {
 			defer wg.Done()
-			checkFileArray(part, "police")
-		}()
+			to := from + sliceLength
+
+			if to > arrayLength {
+				to = arrayLength
+			}
+
+			buildInvertedIndex(filesArray[from:to], word)
+		}(i)
 	}
 
 	wg.Wait()
+	elapsedTime := time.Since(startTime)
 
-	//fmt.Printf("%v", index)
-
-	elapsed := time.Since(start)
-	log.Printf("Process took %s", elapsed)
-
-	//foo := fileContains(res[0], "lower rating")
+	log.Printf("Process took %s", elapsedTime)
+	log.Println("Total array records:", len(resArr))
+	log.Println("Total sync.Map records:", getMapLen(resMap, false))
 }
 
-func checkFileArray(arr []string, search string) {
+func buildInvertedIndex(arr []string, search string) {
 	for _, element := range arr {
-		if fileContains(element, search) {
-			index = append(index, element)
-			fmt.Println(element)
+		substrCounter := fileSubstrCount(element, search)
+
+		if substrCounter > 0 {
+			resMap.Store(element, strconv.Itoa(substrCounter))
+			resArr = append(resArr, element+" - "+strconv.Itoa(substrCounter))
 		}
 	}
 }
 
-func fileContains(filePath string, search string) bool {
-	b, err := ioutil.ReadFile(filePath)
+func getMapLen(syncMap sync.Map, printContent bool) int {
+	counter := 0
+	record := make(map[interface{}]interface{})
 
-	if err != nil {
-		log.Print(err)
+	syncMap.Range(func(k, v interface{}) bool {
+		record[k] = v
+		counter++
+		return true
+	})
+
+	if printContent {
+		fmt.Println(record)
 	}
-	content := string(b)
 
-	return strings.Contains(strings.ToLower(content), strings.ToLower(search))
+	return counter
 }
 
 //import (
